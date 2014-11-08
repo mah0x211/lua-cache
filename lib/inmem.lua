@@ -44,13 +44,13 @@ end
 
 function InMem:set( key, val, expires )
     if not typeof.string( key ) then
-        return nil, 'key must be string';
+        return false, 'key must be string';
     elseif not typeof.table( val ) then
-        return nil, 'val must be table';
+        return false, 'val must be table';
     elseif expires == nil then
         expires = 0;
     elseif not typeof.finite( expires ) then
-        return nil, 'expires must be finite number';
+        return false, 'expires must be finite number';
     end
     
     protected(self).data[key] = {
@@ -86,7 +86,7 @@ end
 
 function InMem:delete( key )
     if not typeof.string( key ) then
-        return nil, 'key must be string';
+        return false, 'key must be string';
     end
     
     local data = protected(self).data;
