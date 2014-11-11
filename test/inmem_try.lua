@@ -12,7 +12,7 @@ local v;
 ifNotNil( mem:get( key ) );
 ifTrue( mem:set() );
 ifTrue( mem:set( 1 ) );
-ifTrue( mem:set( key, 1 ) );
+ifNotTrue( mem:set( key, 1 ) );
 ifTrue( mem:set( key, val, 0/0 ) );
 
 ifNotTrue( mem:set( key, val, expires ) );
@@ -25,4 +25,3 @@ ifNotTrue( mem:delete( key ) );
 ifNotTrue( mem:set( key, val, expires ) );
 sleep( expires );
 ifNotNil( mem:get( key ) );
-
