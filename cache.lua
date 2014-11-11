@@ -109,10 +109,12 @@ end
 
 
 function Cache:delete( key )
-    local own = protected( self );
+    if not KEYTYPE[type(key)] then
+        return false, EKEYTYPE;
+    end
     
     -- boolean, err
-    return own.store:delete( key );
+    return protected( self ).store:delete( key );
 end
 
 
