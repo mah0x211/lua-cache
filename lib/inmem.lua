@@ -36,9 +36,10 @@ local time = os.time;
 local InMem = require('halo').class.InMem;
 
 
-function InMem:init()
+function InMem:init( expires )
     protected(self).data = {};
-    return self;
+    
+    return Cache.new( self, expires );
 end
 
 
