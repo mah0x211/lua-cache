@@ -18,7 +18,6 @@ build = {
     type = "builtin",
     modules = {
         cache = "cache.lua",
-        ['cache.item'] = "lib/item.lua",
         ['cache.inmem'] = "lib/inmem.lua"
     }
 }
