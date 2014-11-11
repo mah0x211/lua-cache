@@ -29,7 +29,15 @@
 
 -- modules
 local typeof = require('util').typeof;
-local CacheItem = require('cache.item');
+local KEYTYPE = {
+    ['string']  = true
+};
+local VALTYPE = {
+    ['boolean'] = true,
+    ['string']  = true,
+    ['table']   = true,
+    ['number']  = typeof.finite,
+};
 local EKEYTYPE = 'key must be string';
 local EVALTYPE = '%q must be boolean, string, table or finite number';
 local EEXPTYPE = 'expires must be finite number'
@@ -85,9 +93,18 @@ end
 
 function Cache:set( key, val, expires )
     local own = protected( self );
+    local t = VALTYPE[type(val)];
     
-    -- boolean, err
-    return own.store:set( key, val, expires or own.expires );
+    if expires ~= nil and not typeof.finite( expires ) then
+        return false, EEXPTYPE;
+    elseif not KEYTYPE[type(key)] then
+        return false, EKEYTYPE;
+    elseif t == true or t and t( val ) then
+        -- boolean, err
+        return own.store:set( key, val, expires or own.expires );
+    end
+    
+    return false, EVALTYPE:format( 'val' );
 end
 
 
