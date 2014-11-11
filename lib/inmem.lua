@@ -29,7 +29,7 @@
 
 -- modules
 local clone = require('util.table').clone;
-local typeof = require('util').typeof;
+local Cache = require('cache');
 local time = os.time;
 
 -- class
@@ -43,19 +43,14 @@ end
 
 
 function InMem:set( key, val, expires )
-    if not typeof.string( key ) then
-        return false, 'key must be string';
-    elseif not typeof.table( val ) then
-        return false, 'val must be table';
-    elseif expires == nil then
-        expires = 0;
-    elseif not typeof.finite( expires ) then
-        return false, 'expires must be finite number';
+    
+    if type( val ) == 'table' then
+        val = clone( val );
     end
     
     protected(self).data[key] = {
         expires = expires <= 0 and 0 or time() + expires,
-        val = clone( val )
+        val = val
     };
     
     return true;
@@ -65,10 +60,6 @@ end
 function InMem:get( key )
     local data = protected(self).data;
     local item;
-    
-    if not typeof.string( key ) then
-        return nil, 'key must be string';
-    end
     
     item = data[key];
     -- not defined
@@ -85,11 +76,8 @@ end
 
 
 function InMem:delete( key )
-    if not typeof.string( key ) then
-        return false, 'key must be string';
-    end
-    
     local data = protected(self).data;
+    
     if data[key] then
         data[key] = nil;
     end
