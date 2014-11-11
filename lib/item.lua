@@ -47,7 +47,7 @@ function Item:__index( name )
         local tbl = own.tbl;
         
         return setmetatable( {}, {
-            __index = function( _, key, val )
+            __index = function( _, key )
                 return tbl[key];
             end,
             __newindex = function( _, key, val )
