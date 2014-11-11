@@ -70,21 +70,34 @@ end
 
 
 function Cache:get( key, defval )
-    local own = protected( self );
-    local val, err;
+    local val, err, t;
     
-    if defval ~= nil and not typeof.table( defval ) then
-        return nil, 'defval must be table';
+    if not KEYTYPE[type(key)] then
+        return nil, EKEYTYPE;
     end
     
-    val, err = own.store:get( key );
+    val, err = protected( self ).store:get( key );
     if err then
         return nil, err;
-    elseif val then
-        return CacheItem.new( self, key, val, own.expires );
-    -- create cache object instance with defval
-    elseif defval then
-        return CacheItem.new( self, key, defval, own.expires );
+    elseif val ~= nil then
+        local t = VALTYPE[type(val)];
+        
+        if t == true or t and t( val ) then
+            return val;
+        end
+        
+        -- store returned an invalid value
+        return nil, ERETTYPE;
+    -- return default value
+    elseif defval ~= nil then
+        local t = VALTYPE[type(defval)];
+        
+        if t == true or t and t( defval ) then
+            return defval;
+        end
+        
+        -- invalid default value type
+        return nil, EVALTYPE:format( 'defval' );
     end
     
     return nil;
