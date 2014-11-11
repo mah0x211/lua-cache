@@ -30,8 +30,13 @@
 -- modules
 local typeof = require('util').typeof;
 local CacheItem = require('cache.item');
+local EKEYTYPE = 'key must be string';
+local EVALTYPE = '%q must be boolean, string, table or finite number';
+local EEXPTYPE = 'expires must be finite number'
+local ERETTYPE = 'store returned an invalid value';
 -- if expire <= 0 then forever
 local DEFAULT_EXPIRES = 3600
+
 
 -- class
 local Cache = require('halo').class.Cache;
@@ -40,7 +45,7 @@ function Cache:init( store, expires )
     local own = protected( self );
     
     if expires ~= nil and not typeof.finite( expires ) then
-        return nil, 'expires must be finite number';
+        return nil, EEXPTYPE;
     -- cache storage should implement get, set and delete method
     elseif not typeof.table( store ) or 
            not typeof.Function( store.get ) or 
