@@ -20,14 +20,14 @@ luarocks install --from=http://mah0x211.github.io/rocks/ cache
 ## Creating a Instance
 
 
-### ins, err = cache.new( store, expires )
+### ins, err = cache.new( store, ttl )
 
 this method create an instance of cache class.
 
 **Parameters**
 
 - store: must implement the `get`, `set` and `delete` methods in this table.
-- expires: number of default expiration seconds.
+- ttl: number of default expiration seconds.
 
 **Returns**
 
@@ -37,7 +37,7 @@ this method create an instance of cache class.
 
 ## Instance Methods
 
-### ok, err = cache:set( key, val [, expires] )
+### ok, err = cache:set( key, val [, ttl] )
 
 set a key-value pair.
 
@@ -45,7 +45,7 @@ set a key-value pair.
 
 - key: string
 - val: boolean, string, table or number.
-- expires: number of expiration seconds. (optional)
+- ttl: number of expiration seconds. (optional)
 
 **Returns**
 
