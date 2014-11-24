@@ -40,20 +40,20 @@ local VALTYPE = {
 };
 local EKEYTYPE = 'key must be string';
 local EVALTYPE = '%q must be boolean, string, table or finite number';
-local EEXPTYPE = 'expires must be finite number'
+local ETTLTYPE = 'ttl must be finite number'
 local ERETTYPE = 'store returned an invalid value';
--- if expire <= 0 then forever
-local DEFAULT_EXPIRES = 3600
+-- if ttl <= 0 then forever
+local DEFAULT_TTL = 3600
 
 
 -- class
 local Cache = require('halo').class.Cache;
 
-function Cache:init( store, expires )
+function Cache:init( store, ttl )
     local own = protected( self );
     
-    if expires ~= nil and not typeof.finite( expires ) then
-        return nil, EEXPTYPE;
+    if ttl ~= nil and not typeof.finite( ttl ) then
+        return nil, ETTLTYPE;
     -- cache storage should implement get, set and delete method
     elseif not typeof.table( store ) or 
            not typeof.Function( store.get ) or 
@@ -62,7 +62,7 @@ function Cache:init( store, expires )
         return nil, 'store should implement get, set and delete method';
     end
     
-    own.expires = expires or DEFAULT_EXPIRES;
+    own.ttl = ttl or DEFAULT_TTL;
     own.store = store;
     
     return self;
@@ -104,17 +104,17 @@ function Cache:get( key, defval )
 end
 
 
-function Cache:set( key, val, expires )
+function Cache:set( key, val, ttl )
     local own = protected( self );
     local t = VALTYPE[type(val)];
     
-    if expires ~= nil and not typeof.finite( expires ) then
-        return false, EEXPTYPE;
+    if ttl ~= nil and not typeof.finite( ttl ) then
+        return false, ETTLTYPE;
     elseif not KEYTYPE[type(key)] then
         return false, EKEYTYPE;
     elseif t == true or t and t( val ) then
         -- boolean, err
-        return own.store:set( key, val, expires or own.expires );
+        return own.store:set( key, val, ttl or own.ttl );
     end
     
     return false, EVALTYPE:format( 'val' );

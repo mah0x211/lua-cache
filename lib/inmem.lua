@@ -36,21 +36,21 @@ local time = os.time;
 local InMem = require('halo').class.InMem;
 
 
-function InMem:init( expires )
+function InMem:init( ttl )
     protected(self).data = {};
     
-    return Cache.new( self, expires );
+    return Cache.new( self, ttl );
 end
 
 
-function InMem:set( key, val, expires )
+function InMem:set( key, val, ttl )
     
     if type( val ) == 'table' then
         val = clone( val );
     end
     
     protected(self).data[key] = {
-        expires = expires <= 0 and 0 or time() + expires,
+        ttl = ttl <= 0 and 0 or time() + ttl,
         val = val
     };
     
@@ -67,7 +67,7 @@ function InMem:get( key )
     if not item then
         return nil;
     -- delete expired item
-    elseif item.expires > 0 and item.expires <= time() then
+    elseif item.ttl > 0 and item.ttl <= time() then
         data[key] = nil;
         return nil;
     end
