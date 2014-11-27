@@ -117,4 +117,5 @@ cache:get( key, 'default val' ); -- 'default val'
 ## Related Module
 
 - cache-resty-redis: https://github.com/mah0x211/lua-cache-resty-redis
+- cache-resty-dict: https://github.com/mah0x211/lua-cache-resty-dict
 
