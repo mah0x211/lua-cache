@@ -40,7 +40,7 @@ local VALTYPE = {
 };
 local EKEYTYPE = 'key must be string';
 local EVALTYPE = '%q must be boolean, string, table or finite number';
-local ETTLTYPE = 'ttl must be finite number'
+local ETTLTYPE = 'ttl must be unsigned integer';
 local ERETTYPE = 'store returned an invalid value';
 -- if ttl <= 0 then forever
 local DEFAULT_TTL = 3600
@@ -52,7 +52,7 @@ local Cache = require('halo').class.Cache;
 function Cache:init( store, ttl )
     local own = protected( self );
     
-    if ttl ~= nil and not typeof.finite( ttl ) then
+    if ttl ~= nil and not typeof.uint( ttl ) then
         return nil, ETTLTYPE;
     -- cache storage should implement get, set and delete method
     elseif not typeof.table( store ) or 
@@ -108,7 +108,7 @@ function Cache:set( key, val, ttl )
     local own = protected( self );
     local t = VALTYPE[type(val)];
     
-    if ttl ~= nil and not typeof.finite( ttl ) then
+    if ttl ~= nil and not typeof.uint( ttl ) then
         return false, ETTLTYPE;
     elseif not KEYTYPE[type(key)] then
         return false, EKEYTYPE;
