@@ -17,7 +17,7 @@ ifTrue( mem:set( key, val, 0/0 ) );
 
 ifNotTrue( mem:set( key, val, expires ) );
 v = ifNil( mem:get( key ) );
-ifEqual( v, val );
+ifEqual( tostring( v ), tostring( val ) );
 ifNotEqual( inspect( v ), inspect( val ) );
 
 ifNotTrue( mem:delete( key ) );
