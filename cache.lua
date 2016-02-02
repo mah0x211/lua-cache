@@ -42,6 +42,7 @@ local EKEYTYPE = 'key must be string';
 local EVALTYPE = '%q must be boolean, string, table or finite number';
 local ETTLTYPE = 'ttl must be unsigned integer';
 local ERETTYPE = 'store returned an invalid value';
+local ENOSUP = 'store does not supports a rename method';
 -- if ttl <= 0 then forever
 local DEFAULT_TTL = 3600
 
@@ -60,6 +61,9 @@ function Cache:init( store, ttl )
            not typeof.Function( store.set ) or 
            not typeof.Function( store.delete ) then
         return nil, 'store should implement get, set and delete method';
+    -- optional impments
+    elseif ( store.rename ~= nil and not typeof.Function( store.rename ) ) then
+        return nil, 'store.rename method must be function';
     end
     
     own.ttl = ttl or DEFAULT_TTL;
@@ -132,12 +136,16 @@ end
 
 
 function Cache:rename( okey, nkey )
-    if not KEYTYPE[type(okey)] or not KEYTYPE[type(nkey)] then
+    local store = protected( self ).store;
+
+    if not store.rename then
+        return false, ENOSUP;
+    elseif not KEYTYPE[type(okey)] or not KEYTYPE[type(nkey)] then
         return false, EKEYTYPE;
     end
     
     -- boolean, err
-    return protected( self ).store:rename( okey, nkey );
+    return store:rename( okey, nkey );
 end
 
 
