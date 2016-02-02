@@ -131,4 +131,14 @@ function Cache:delete( key )
 end
 
 
+function Cache:rename( okey, nkey )
+    if not KEYTYPE[type(okey)] or not KEYTYPE[type(nkey)] then
+        return false, EKEYTYPE;
+    end
+    
+    -- boolean, err
+    return protected( self ).store:rename( okey, nkey );
+end
+
+
 return Cache.exports;

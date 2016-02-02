@@ -87,4 +87,15 @@ function InMem:delete( key )
 end
 
 
+function InMem:rename( okey, nkey )
+    local data = protected(self).data;
+    
+    if data[okey] then
+        data[nkey], data[okey] = data[okey], nil;
+    end
+    
+    return true;
+end
+
+
 return InMem.exports;
