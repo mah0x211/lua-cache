@@ -13,7 +13,7 @@ pluggable cache storage module.
 ## Installation
 
 ```sh
-luarocks install --from=http://mah0x211.github.io/rocks/ cache
+luarocks install cache --from=http://mah0x211.github.io/rocks/
 ```
 
 
@@ -79,6 +79,23 @@ returns value associated with a key. or, returns a defval argument if it is nil.
 **Returns**
 
 1. val: boolean, string, table or number.
+2. err: error string.
+
+
+## Optional Instance Methods
+
+### ok, err = cache:rename( okey, nkey )
+
+rename the key name.
+
+**Parameters**
+
+- okey: string
+- nkey: string
+
+**Returns**
+
+1. ok: true on success, or false on failure.
 2. err: error string.
 
 
