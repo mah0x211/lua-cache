@@ -26,7 +26,7 @@ this method create an instance of cache class.
 
 **Parameters**
 
-- store: must implement the `get`, `set` and `delete` methods in this table.
+- store: must implement the `get`, `set` and `delete` methods in this table.
 - ttl: number of default expiration seconds.
 
 **Returns**
@@ -67,14 +67,15 @@ delete a value associated with a key.
 2. err: error string.
 
 
-### val, err = cache:get( key:string, defval:defaultValue )
+### val, err = cache:get( key [, defval [, ttl]] )
 
 returns value associated with a key. or, returns a defval argument if it is nil.
 
 **Parameters**
 
 - key: string
-- defval: boolean, string, table or number.
+- defval: boolean, string, table or number. (optional)
+- ttl: renew a number of expiration seconds. (optional)
 
 **Returns**
 
