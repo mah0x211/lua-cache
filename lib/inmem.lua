@@ -58,7 +58,7 @@ function InMem:set( key, val, ttl )
 end
 
 
-function InMem:get( key )
+function InMem:get( key, ttl )
     local data = protected(self).data;
     local item;
     
@@ -70,8 +70,11 @@ function InMem:get( key )
     elseif item.ttl > 0 and item.ttl <= time() then
         data[key] = nil;
         return nil;
+    -- update ttl
+    elseif ttl ~= nil then
+        item.ttl = ttl <= 0 and 0 or time() + ttl;
     end
-    
+
     return clone( item.val );
 end
 

@@ -73,14 +73,17 @@ function Cache:init( store, ttl )
 end
 
 
-function Cache:get( key, defval )
+function Cache:get( key, defval, ttl )
     local val, err, t;
-    
+
+    -- check arguments
     if not KEYTYPE[type(key)] then
         return nil, EKEYTYPE;
+    elseif ttl ~= nil and not typeof.uint( ttl ) then
+        return nil, ETTLTYPE;
     end
-    
-    val, err = protected( self ).store:get( key );
+
+    val, err = protected( self ).store:get( key, ttl );
     if err then
         return nil, err;
     elseif val ~= nil then
