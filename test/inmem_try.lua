@@ -45,3 +45,10 @@ ifNotTrue( mem:delete( newkey ) );
 ifNotTrue( mem:set( key, val, expires ) );
 sleep( expires );
 ifNotNil( mem:get( key ) );
+
+
+-- test get with ttl
+ifNotTrue( mem:set( key, val, expires + 3 ) );
+ifNil( mem:get( key, nil, expires ) );
+sleep( expires );
+ifNotNil( mem:get( key ) );
