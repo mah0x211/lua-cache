@@ -1,24 +1,23 @@
+rockspec_format = "3.0"
 package = "cache"
 version = "scm-1"
 source = {
-    url = "git://github.com/mah0x211/lua-cache.git"
+    url = "git+https://github.com/mah0x211/lua-cache.git",
 }
 description = {
     summary = "pluggable cache storage module",
-    homepage = "https://github.com/mah0x211/lua-cache", 
+    homepage = "https://github.com/mah0x211/lua-cache",
     license = "MIT/X11",
-    maintainer = "Masatoshi Teruya"
+    maintainer = "Masatoshi Fukunaga",
 }
 dependencies = {
     "lua >= 5.1",
-    "util >= 1.2.0",
-    "halo >= 1.1"
+    "metamodule >= 0.4",
 }
 build = {
     type = "builtin",
     modules = {
         cache = "cache.lua",
-        ['cache.inmem'] = "lib/inmem.lua"
-    }
+    },
 }
 

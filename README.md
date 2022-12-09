@@ -1,139 +1,170 @@
-#lua-cache
+# lua-cache
 
-pluggable cache storage module.
+general-purpose cache module.
 
 ---
-
-## Dependencies
-
-- util: https://github.com/mah0x211/lua-util
-- halo: https://github.com/mah0x211/lua-halo
-
 
 ## Installation
 
 ```sh
-luarocks install cache --from=http://mah0x211.github.io/rocks/
+luarocks install cache
+```
+
+## Usage
+
+```lua
+local sleep = require('nanosleep.sleep')
+local cache = require('cache')
+-- default ttl: 2 seconds
+local c = cache(2)
+
+local key = 'test'
+local val = 'test val'
+print(c:set(key, val)) -- true
+print(c:get(key)) -- 'test val'
+print(c:del(key)) -- true
+
+print(c:set(key, val)) -- true
+-- after 2 seconds
+sleep(2)
+print(c:get(key)) -- nil
 ```
 
 
-## Creating a Instance
+## c = cache( ttl )
 
-
-### ins, err = cache.new( store, ttl )
-
-this method create an instance of cache class.
+create an instance of cache.
 
 **Parameters**
 
-- store: must implement the `get`, `set` and `delete` methods in this table.
-- ttl: number of default expiration seconds.
+- `ttl:integer|nil`: default expiration seconds.
 
 **Returns**
 
-1. ins: instance.
-2. err: error string.
+- `c:cache`: instance of cache.
 
 
-## Instance Methods
-
-### ok, err = cache:set( key, val [, ttl] )
+## ok, err = cache:set_item( key, val [, ttl] )
 
 set a key-value pair.
 
 **Parameters**
 
-- key: string
-- val: boolean, string, table or number.
-- ttl: number of expiration seconds. (optional)
+- `key:string`: a key string.
+- `val:any`: any value.
+- `ttl:integer|nil`: expiration seconds
 
 **Returns**
 
-1. ok: true on success, or false on failure.
-2. err: error string.
+-. `ok:boolean`: `true` on success, or `false` on failure.
+-. `err:any`: error message.
 
 
-### ok, err = cache:delete( key )
+## ok, err = cache:set( key, val [, ttl] )
 
-delete a value associated with a key.
+set a key-value pair.  
+this method calls the `self:set_item()` method after validating its arguments.
 
 **Parameters**
 
-- key: string
+- `key:string`: a string that matched to the pattern `^[a-zA-Z0-9_%-]+$'`.
+- `val:any`: any value except `nil`.
+- `ttl:integer`: expiration seconds greater or equal to `0`. (optional)
 
 **Returns**
 
-1. ok: true on success, or false on failure.
-2. err: error string.
+-. `ok:boolean`: `true` on success, or `false` on failure.
+-. `err:any`: error message.
 
 
-### val, err = cache:get( key [, defval [, ttl]] )
+## val, err = cache:get_item( key [, touch] )
 
-returns value associated with a key. or, returns a defval argument if it is nil.
+get a value associated with a `key` and update an expiration seconds if `touch` is specified.
 
 **Parameters**
 
-- key: string
-- defval: boolean, string, table or number. (optional)
-- ttl: renew a number of expiration seconds. (optional)
+- `key:string`: a string.
+- `touch:boolean`: update an expiration seconds. (optional)
 
 **Returns**
 
-1. val: boolean, string, table or number.
-2. err: error string.
+- `val:any`: a value.
+- `err:any`: error message.
 
 
-## Optional Instance Methods
+## val, err = cache:get( key [, touch] )
 
-### ok, err = cache:rename( okey, nkey )
-
-rename the key name.
+get a value associated with a `key` and update an expiration seconds if `touch` is specified.  
+this method calls the `self:get_item()` method after validating its arguments.
 
 **Parameters**
 
-- okey: string
-- nkey: string
+- `key:string`: a string that matched to the pattern `^[a-zA-Z0-9_%-]+$'`.
+- `touch:boolean`: update an expiration seconds. (optional)
 
 **Returns**
 
-1. ok: true on success, or false on failure.
-2. err: error string.
+- `val:any`: a value.
+- `err:any`: error message.
 
 
-## Note 
+## ok, err = cache:del_item( key )
 
-`cache` module is an interface implementation for storage plugins.
+delete a value associated with a `key`.
 
-if you need to create original plugins, please refer to the source of `lib/inmem.lua`.
+**Parameters**
+
+- `key:string`: a string.
+
+**Returns**
+
+- `ok:boolean`: `true` on success, or `false` on failure.
+- `err:any`: error message.
 
 
-## Built-in Module `cache.inmem`
+## ok, err = cache:del( key )
 
-this module use the lua table as an in-memory cache storage.
+delete a value associated with a `key`.  
+this method calls the `self:del_item()` method after validating its arguments.
 
-#### Usage
+**Parameters**
 
-```
-local inmem = require('cache.inmem');
-local defaultExpires = 30;
-local cache = inmem.new( defaultExpires );
-local key = 'test key';
-local val = 'test val';
+- `key:string`: a string that matched to the pattern `^[a-zA-Z0-9_%-]+$'`.
 
-cache:set( key, val ); -- true
-cache:get( key ); -- 'test val'
-cache:delete( key ); -- true
+**Returns**
 
-cache:set( key, val ); -- true
--- after 30 seconds
-cache:get( key ); -- nil
+- `ok:boolean`: `true` on success, or `false` on failure.
+- `err:any`: error message.
 
--- use default value: 'default val'
-cache:get( key, 'default val' ); -- 'default val'
-```
 
-## Related Module
+## ok, err = cache:rename_item( oldkey, newkey )
 
-- cache-resty-redis: https://github.com/mah0x211/lua-cache-resty-redis
-- cache-resty-dict: https://github.com/mah0x211/lua-cache-resty-dict
+rename the `oldkey` name to `newkey`.
+
+**Parameters**
+
+- `oldkey:string`: a string.
+- `new key:string`: a string.
+
+**Returns**
+
+- `ok:boolean`: `true` on success, or `false` on failure.
+- `err:any`: error message.
+
+
+## ok, err = cache:rename( oldkey, newkey )
+
+rename the `oldkey` name to `newkey`.  
+this method calls the `self:rename_item()` method after validating its arguments.
+
+**Parameters**
+
+- `oldkey:string`: a string that matched to the pattern `^[a-zA-Z0-9_%-]+$'`.
+- `new key:string`: a string that matched to the pattern `^[a-zA-Z0-9_%-]+$'`.
+
+**Returns**
+
+- `ok:boolean`: `true` on success, or `false` on failure.
+- `err:any`: error message.
+
 
