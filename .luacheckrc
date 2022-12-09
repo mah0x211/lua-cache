@@ -1,6 +1,7 @@
 std = 'max'
 include_files = {
-    'lib/**/*.lua',
+    'cache.lua',
+    'lib/***.lua',
     'test/*_test.lua',
 }
 ignore = {

@@ -19,118 +19,212 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 -- THE SOFTWARE.
 --
--- cache.lua
--- lua-cache
---
--- Created by Masatoshi Teruya on 14/11/07.
---
--- modules
-local typeof = require('util').typeof
-local KEYTYPE = {['string'] = true}
-local VALTYPE = {
-    ['boolean'] = true,
-    ['string'] = true,
-    ['table'] = true,
-    ['number'] = typeof.finite
-}
-local EKEYTYPE = 'key must be string'
-local EVALTYPE = '%q must be boolean, string, table or finite number'
-local ETTLTYPE = 'ttl must be unsigned integer'
-local ERETTYPE = 'store returned an invalid value'
-local ENOSUP = 'store does not supports a rename method'
--- if ttl <= 0 then forever
-local DEFAULT_TTL = 3600
+local floor = math.floor
+local find = string.find
+local format = string.format
+local type = type
+local getmetatable = debug.getmetatable
+local encode = require('yyjson').encode
+local decode = require('yyjson').decode
+-- constants
+local INF_POS = math.huge
+local INF_NEG = -INF_POS
+local KEY_PATTERN = '^[a-zA-Z0-9_%-]+$'
+local EKEY = format('key must be string of %q', KEY_PATTERN)
+local EVAL = 'val must not be nil'
 
--- class
-local Cache = require('halo').class.Cache
-
-function Cache:init(store, ttl)
-    local own = protected(self)
-
-    if ttl ~= nil and not typeof.uint(ttl) then
-        return nil, ETTLTYPE
-        -- cache storage should implement get, set and delete method
-    elseif not typeof.table(store) or not typeof.Function(store.get) or
-        not typeof.Function(store.set) or not typeof.Function(store.delete) then
-        return nil, 'store should implement get, set and delete method'
-        -- optional impments
-    elseif (store.rename ~= nil and not typeof.Function(store.rename)) then
-        return nil, 'store.rename method must be function'
+--- is_callable
+--- @return boolean ok
+local function is_callable(v)
+    if type(v) == 'function' then
+        return true
     end
 
-    own.ttl = ttl or DEFAULT_TTL
-    own.store = store
+    local mt = getmetatable(v)
+    if type(mt) == 'table' then
+        return type(mt.__call) == 'function'
+    end
+
+    return false
+end
+
+--- is_int
+--- @param x any
+--- @return boolean
+local function is_int(x)
+    return type(x) == 'number' and x > INF_NEG and x < INF_POS and floor(x) == x
+end
+
+--- is_pint
+--- @param x any
+--- @return boolean
+local function is_pint(x)
+    return is_int(x) and x > 0
+end
+
+--- is_uint
+--- @param x any
+--- @return boolean
+local function is_uint(x)
+    return is_int(x) and x >= 0
+end
+
+--- is_valid_key
+--- @param key string
+--- @return boolean
+local function is_valid_key(key)
+    return type(key) == 'string' and find(key, KEY_PATTERN) ~= nil
+end
+
+--- @class cache
+--- @field store cache.store
+--- @field ttl integer
+local Cache = {}
+
+--- init
+--- @param store cache.store
+--- @param ttl integer
+--- @return cache
+function Cache:init(store, ttl)
+    local t = type(store)
+    if t ~= 'table' and t ~= 'userdata' then
+        error('store must be table or userdata', 2)
+    end
+
+    -- cache store must be implemented the following methods
+    local ok, err = pcall(function()
+        for _, fname in ipairs({
+            'set',
+            'get',
+            'delete',
+            'rename',
+            'keys',
+            'evict',
+        }) do
+            if type(store[fname]) ~= 'function' then
+                error(format('store must be implemented the %q method', fname))
+            end
+        end
+    end)
+    if not ok then
+        error(err, 2)
+    end
+    self.store = store
+
+    if not is_pint(ttl) then
+        error('ttl must be positive-integer', 2)
+    end
+    self.ttl = ttl
 
     return self
 end
 
-function Cache:get(key, defval, ttl)
-    local val, err, t
-
-    -- check arguments
-    if not KEYTYPE[type(key)] then
-        return nil, EKEYTYPE
-    elseif ttl ~= nil and not typeof.uint(ttl) then
-        return nil, ETTLTYPE
-    end
-
-    val, err = protected(self).store:get(key, ttl)
-    if err then
-        return nil, err
-    elseif val ~= nil then
-        local t = VALTYPE[type(val)]
-
-        if t == true or t and t(val) then return val end
-
-        -- store returned an invalid value
-        return nil, ERETTYPE
-        -- return default value
-    elseif defval ~= nil then
-        local t = VALTYPE[type(defval)]
-
-        if t == true or t and t(defval) then return defval end
-
-        -- invalid default value type
-        return nil, EVALTYPE:format('defval')
-    end
-
-    return nil
-end
-
+--- set
+--- @param key string
+--- @param val any
+--- @param ttl integer
+--- @return boolean ok
+--- @return any err
+--- @return boolean? timeout
 function Cache:set(key, val, ttl)
-    local own = protected(self)
-    local t = VALTYPE[type(val)]
-
-    if ttl ~= nil and not typeof.uint(ttl) then
-        return false, ETTLTYPE
-    elseif not KEYTYPE[type(key)] then
-        return false, EKEYTYPE
-    elseif t == true or t and t(val) then
-        -- boolean, err
-        return own.store:set(key, val, ttl or own.ttl)
+    if not is_valid_key(key) then
+        error(EKEY, 2)
+    elseif val == nil then
+        error(EVAL, 2)
+    elseif ttl == nil then
+        ttl = self.ttl
+    elseif not is_uint(ttl) then
+        error('ttl must be uint', 2)
     end
 
-    return false, EVALTYPE:format('val')
+    local err
+    val, err = encode(val)
+    if not val then
+        return false, err
+    end
+
+    return self.store:set(key, val, ttl)
 end
 
+--- get
+--- @param key string
+--- @param ttl integer
+--- @return any val
+--- @return any err
+--- @return boolean? timeout
+function Cache:get(key, ttl)
+    if not is_valid_key(key) then
+        error(EKEY, 2)
+    elseif ttl ~= nil and not is_uint(ttl) then
+        error('ttl must be uint', 2)
+    end
+
+    local val, err, timeout = self.store:get(key, ttl)
+    if not val then
+        return nil, err, timeout
+    end
+
+    val, err = decode(val)
+    if not val then
+        return nil, err
+    end
+    return val
+end
+
+--- delete
+--- @param key string
+--- @return boolean ok
+--- @return any err
+--- @return boolean? timeout
 function Cache:delete(key)
-    if not KEYTYPE[type(key)] then return false, EKEYTYPE end
-
-    -- boolean, err
-    return protected(self).store:delete(key)
-end
-
-function Cache:rename(okey, nkey)
-    local store = protected(self).store
-
-    if not store.rename then
-        return false, ENOSUP
-    elseif not KEYTYPE[type(okey)] or not KEYTYPE[type(nkey)] then
-        return false, EKEYTYPE
+    if not is_valid_key(key) then
+        error(EKEY, 2)
     end
-
-    -- boolean, err
-    return store:rename(okey, nkey)
+    return self.store:delete(key)
 end
 
-return Cache.exports
+--- rename
+---@param oldkey string
+---@param newkey string
+---@return boolean ok
+---@return any err
+---@return boolean? timeout
+function Cache:rename(oldkey, newkey)
+    if not is_valid_key(oldkey) or not is_valid_key(newkey) then
+        error(EKEY, 2)
+    end
+    return self.store:rename(oldkey, newkey)
+end
+
+--- keys
+--- @param callback fun(string):(boolean,any)
+--- @return boolean ok
+--- @return any err
+--- @return boolean? timeout
+function Cache:keys(callback)
+    if not is_callable(callback) then
+        error('callback must be callable', 2)
+    end
+    return self.store:keys(callback)
+end
+
+--- evict
+--- @param callback fun(string):(boolean,any)
+--- @param n integer
+--- @return integer nevict
+--- @return any err
+--- @return boolean? timeout
+function Cache:evict(callback, n)
+    if not is_callable(callback) then
+        error('callback must be callable', 2)
+    elseif n ~= nil and not is_int(n) then
+        error('n must be integer', 2)
+    elseif n == nil or n == 0 then
+        n = -1
+    end
+    return self.store:evict(callback, n)
+end
+
+return {
+    new = require('metamodule').new(Cache),
+}
