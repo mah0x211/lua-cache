@@ -1,0 +1,7 @@
+codefromstrings = false
+runreport = true
+deletestats = false
+modules = {
+    ['cache'] = 'cache.lua',
+    ['cache.inmem'] = 'lib/inmem.lua',
+}
