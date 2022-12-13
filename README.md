@@ -203,3 +203,24 @@ execute a provided function once for each key. it is aborted if it returns `fals
 - `err:any`: error message.
 
 
+
+## n, err = cache:evict( callback [, n] )
+
+execute a provided function once before key is deleted. it is aborted if it returns `false` or an error.
+
+**Parameters**
+
+- `callback:function`: a function that called with key.
+    ```
+    ok, err = callback(key)
+    - ok:boolean: true on continue.
+    - err:any: an error message.
+    - key:string: cached key string.
+    ```
+
+**Returns**
+
+- `n:integer`: number of keys evicted.
+- `err:any`: error message.
+
+

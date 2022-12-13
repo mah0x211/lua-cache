@@ -1,4 +1,3 @@
-rockspec_format = "3.0"
 package = "cache"
 version = "scm-1"
 source = {
@@ -12,6 +11,7 @@ description = {
 }
 dependencies = {
     "lua >= 5.1",
+    "minheap >= 0.2",
     "metamodule >= 0.4",
 }
 build = {

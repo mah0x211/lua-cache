@@ -26,12 +26,14 @@ local time = os.time
 local pairs = pairs
 local type = type
 local getmetatable = debug.getmetatable
+local new_minheap = require('minheap').new
 -- constants
 local INF_POS = math.huge
 local INF_NEG = -INF_POS
 local KEY_PATTERN = '^[a-zA-Z0-9_%-]+$'
 local EKEY = format('key must be string of %q', KEY_PATTERN)
 local EVAL = 'val must not be nil'
+local ERELEASE = 'failed to release cached key'
 
 --- is_callable
 --- @return boolean ok
@@ -79,6 +81,7 @@ end
 --- @class cache
 --- @field ttl integer
 --- @field data table
+--- @field heap minheap
 local Cache = {}
 
 --- init
@@ -101,6 +104,7 @@ end
 --- @return cache
 function Cache:init_once(...)
     self.data = {}
+    self.heap = new_minheap()
     return self
 end
 
@@ -111,11 +115,21 @@ end
 --- @return boolean ok
 --- @return any err
 function Cache:set_item(key, val, ttl)
+    local item = self.data[key]
+    local exp = (ttl or self.ttl) + time()
+
+    -- replace old item with new item
     self.data[key] = {
         val = val,
         ttl = ttl or self.ttl,
-        exp = (ttl or self.ttl) + time(),
+        exp = exp,
+        node = assert(self.heap:push(exp, key), 'failed to hold new cache key'),
     }
+    if item then
+        -- evict old item
+        assert(self.heap:del(item.node.idx), ERELEASE)
+    end
+
     return true
 end
 
@@ -145,14 +159,19 @@ function Cache:get_item(key, touch)
     local item = self.data[key]
     if not item then
         return nil
-    elseif item.exp then
-        local t = time()
-        if item.exp <= t then
-            self.data[key] = nil
-            return nil
-        elseif touch then
-            item.exp = t + item.ttl
-        end
+    elseif not item.exp then
+        self.data[key] = nil
+        assert(self.heap:del(item.node.idx), ERELEASE)
+        return nil
+    end
+
+    local t = time()
+    if item.exp <= t then
+        self.data[key] = nil
+        assert(self.heap:del(item.node.idx), ERELEASE)
+        return nil
+    elseif touch then
+        item.exp = t + item.ttl
     end
 
     return item.val
@@ -177,8 +196,10 @@ end
 --- @return boolean ok
 --- @return any err
 function Cache:del_item(key)
-    if self.data[key] ~= nil then
+    local item = self.data[key]
+    if item then
         self.data[key] = nil
+        assert(self.heap:del(item.node.idx), ERELEASE)
         return true
     end
     return false
@@ -241,6 +262,54 @@ function Cache:keys(callback)
     end
 
     return true
+end
+
+--- evict
+--- @param callback fun(string):(boolean,any)
+--- @param n integer
+--- @return integer nevict
+--- @return any err
+function Cache:evict(callback, n)
+    if not is_callable(callback) then
+        error('callback must be callable', 2)
+    elseif n ~= nil and not is_int(n) then
+        error('n must be integer', 2)
+    elseif n == nil or n == 0 then
+        n = -1
+    end
+
+    local nevict = 0
+    local t = time()
+    local node = self.heap:peek()
+
+    while n ~= 0 and node do
+        local key = node.val
+        local item = self.data[key]
+        if not item then
+            -- remove index
+            assert(self.heap:del(node.idx), ERELEASE)
+        elseif item.exp <= t then
+            local ok, err = callback(key)
+            if not ok then
+                if err ~= nil then
+                    return nevict, err
+                end
+                return nevict
+            end
+
+            -- remove expired key and index
+            self.data[key] = nil
+            assert(self.heap:del(node.idx), ERELEASE)
+            nevict = nevict + 1
+        else
+            return nevict
+        end
+
+        n = n - 1
+        node = self.heap:peek()
+    end
+
+    return nevict
 end
 
 Cache = require('metamodule').new(Cache)
