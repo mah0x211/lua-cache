@@ -168,3 +168,23 @@ this method calls the `self:rename_item()` method after validating its arguments
 - `err:any`: error message.
 
 
+## ok, err = cache:keys( callback )
+
+execute a provided function once for each key. it is aborted if it returns `false` or an error.
+
+**Parameters**
+
+- `callback:function`: a function that called with each key.
+    ```
+    ok, err = callback(key)
+    - ok:boolean: true on continue.
+    - err:any: an error message.
+    - key:string: cached key string.
+    ```
+
+**Returns**
+
+- `ok:boolean`: `true` on success, or `false` on failure.
+- `err:any`: error message.
+
+

@@ -23,7 +23,9 @@ local floor = math.floor
 local find = string.find
 local format = string.format
 local time = os.time
+local pairs = pairs
 local type = type
+local getmetatable = debug.getmetatable
 -- constants
 local INF_POS = math.huge
 local INF_NEG = -INF_POS
@@ -206,6 +208,28 @@ function Cache:rename(oldkey, newkey)
         error(EKEY, 2)
     end
     return self:rename_item(oldkey, newkey)
+end
+
+--- keys
+--- @param callback fun(string):(boolean,any)
+--- @return boolean ok
+--- @return any err
+function Cache:keys(callback)
+    if not is_callable(callback) then
+        error('callback must be callable', 2)
+    end
+
+    for k in pairs(self.data) do
+        local ok, err = callback(k)
+        if not ok then
+            if err ~= nil then
+                return false, err
+            end
+            return true
+        end
+    end
+
+    return true
 end
 
 Cache = require('metamodule').new(Cache)
