@@ -31,17 +31,32 @@ print(c:get(key)) -- nil
 ```
 
 
-## c = cache( ttl )
+## c = cache( ttl [, ...] )
 
-create an instance of cache.
+create an instance of cache.  
+this function calls the `self:init_once()` method with passed arguments.
 
 **Parameters**
 
 - `ttl:integer|nil`: default expiration seconds.
+- `...`: any values.
 
 **Returns**
 
 - `c:cache`: instance of cache.
+
+
+## c = cache:init_once( ... )
+
+initialize and return an instance.
+
+**Parameters**
+
+same as the `cache()` function.
+
+**Returns**
+
+same as the `cache()` function.
 
 
 ## ok, err = cache:set_item( key, val [, ttl] )

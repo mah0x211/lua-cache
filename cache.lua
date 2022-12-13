@@ -77,19 +77,30 @@ local function is_valid_key(key)
 end
 
 --- @class cache
---- @field data table
 --- @field ttl integer
+--- @field data table
 local Cache = {}
 
 --- init
+--- @param ttl integer
 --- @return cache
-function Cache:init(ttl)
+function Cache:init(ttl, ...)
     if not is_pint(ttl) then
         error('ttl must be positive-integer', 2)
     end
 
-    self.data = {}
     self.ttl = ttl
+
+    local init_once = self.init_once
+    self.init_once = true
+    return init_once(self, ttl, ...)
+end
+
+--- init_once
+--- @vararg ...
+--- @return cache
+function Cache:init_once(...)
+    self.data = {}
     return self
 end
 
