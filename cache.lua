@@ -201,11 +201,11 @@ end
 --- @return boolean ok
 --- @return any err
 --- @return boolean? timeout
-function Cache:keys(callback)
+function Cache:keys(callback, ...)
     if not is_callable(callback) then
         error('callback must be callable', 2)
     end
-    return self.store:keys(callback)
+    return self.store:keys(callback, ...)
 end
 
 --- evict
@@ -214,7 +214,7 @@ end
 --- @return integer nevict
 --- @return any err
 --- @return boolean? timeout
-function Cache:evict(callback, n)
+function Cache:evict(callback, n, ...)
     if not is_callable(callback) then
         error('callback must be callable', 2)
     elseif n ~= nil and not is_int(n) then
@@ -222,7 +222,7 @@ function Cache:evict(callback, n)
     elseif n == nil or n == 0 then
         n = -1
     end
-    return self.store:evict(callback, n)
+    return self.store:evict(callback, n, ...)
 end
 
 return {

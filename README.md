@@ -22,7 +22,7 @@ local sleep = require('nanosleep.sleep')
 -- this module uses the lua table as in-memory cache storage.
 local cache = require('cache.inmem')
 -- default ttl: 2 seconds
-local c = cache(2)
+local c = cache.new(2)
 local key = 'test'
 local val = 'test val'
 
@@ -37,10 +37,9 @@ print(c:get(key)) -- nil
 ```
 
 
-## c = cache( store, ttl )
+## c = cache.new( store, ttl )
 
 create an instance of cache.  
-this function calls the `self:init_once()` method with passed arguments.
 
 **Parameters**
 
@@ -50,7 +49,7 @@ this function calls the `self:init_once()` method with passed arguments.
 
 **Returns**
 
-- `c:cache`: instance of cache.
+- `c:cache`: instance of `cache`.
 
 
 ## ok, err = cache:set( key, val [, ttl] )
@@ -66,8 +65,8 @@ this method calls the `store:set()` method after validating its arguments.
 
 **Returns**
 
--. `ok:boolean`: `true` on success, or `false` on failure.
--. `err:any`: error message.
+- `ok:boolean`: `true` on success, or `false` on failure.
+- `err:any`: error message.
 
 
 ## val, err = cache:get( key [, ttl] )
@@ -117,7 +116,7 @@ this method calls the `store:rename()` method after validating its arguments.
 - `err:any`: error message.
 
 
-## ok, err = cache:keys( callback )
+## ok, err = cache:keys( callback, ... )
 
 execute a provided function once for each key. it is aborted if it returns `false` or an error.  
 this method calls the `store:keys()` method after validating its arguments.
@@ -139,7 +138,7 @@ this method calls the `store:keys()` method after validating its arguments.
 
 
 
-## n, err = cache:evict( callback [, n] )
+## n, err = cache:evict( callback [, n, ...] )
 
 execute a provided function once before key is deleted. it is aborted if it returns `false` or an error.  
 this method calls the `store:evict()` method after validating its arguments.
@@ -153,6 +152,7 @@ this method calls the `store:evict()` method after validating its arguments.
     - err:any: an error message.
     - key:string: cached key string.
     ```
+- `n:integer`: maximum number of keys to be evicted.
 
 **Returns**
 
