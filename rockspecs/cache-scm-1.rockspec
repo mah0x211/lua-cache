@@ -11,6 +11,7 @@ description = {
 }
 dependencies = {
     "lua >= 5.1",
+    "error >= 0.14.0",
     "minheap >= 0.2",
     "metamodule >= 0.4",
     "yyjson >= 0.5.0",

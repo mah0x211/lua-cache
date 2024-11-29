@@ -1,5 +1,6 @@
 require('luacov')
 local testcase = require('testcase')
+local assert = require('assert')
 local sleep = require('testcase.timer').sleep
 local new_cache = require('cache.inmem').new
 
@@ -28,19 +29,22 @@ function testcase.set()
         inf = 0 / 0,
     })
     assert.is_false(ok)
-    assert.equal(err, 'nan or inf number is not allowed')
+    assert.match(err, 'nan or inf number is not allowed')
 
-    -- test that throws an error if key is invalid
-    err = assert.throws(c.set, c, 'foo bar')
+    -- test that return an error if key is invalid
+    ok, err = c:set('foo bar')
     assert.match(err, 'key must be string of "^[a-zA-Z0-9_%-]+$"')
+    assert.is_false(ok)
 
     -- test that throws an error if val is invalid
-    err = assert.throws(c.set, c, 'foobar')
+    ok, err = c:set('foobar')
     assert.match(err, 'val must not be nil')
+    assert.is_false(ok)
 
     -- test that throws an error if ttl is invalid
-    err = assert.throws(c.set, c, 'foobar', true, {})
+    ok, err = c:set('foobar', true, {})
     assert.match(err, 'ttl must be uint')
+    assert.is_false(ok)
 end
 
 function testcase.get()
@@ -62,12 +66,14 @@ function testcase.get()
     assert.is_nil(c:get('bar'))
 
     -- test that throws an error if key is invalid
-    local err = assert.throws(c.get, c, 'foo bar')
+    local val, err = c:get('foo bar')
     assert.match(err, 'key must be string of "^[a-zA-Z0-9_%-]+$"')
+    assert.is_nil(val)
 
     -- test that throws an error if touch is invalid
-    err = assert.throws(c.get, c, 'foobar', {})
+    val, err = c:get('foobar', {})
     assert.match(err, 'ttl must be uint')
+    assert.is_nil(val)
 end
 
 function testcase.delete()
@@ -83,8 +89,9 @@ function testcase.delete()
     assert.is_false(c:delete('foo'))
 
     -- test that throws an error if key is invalid
-    local err = assert.throws(c.delete, c, 'foo bar')
+    local ok, err = c:delete('foo bar')
     assert.match(err, 'key must be string of "^[a-zA-Z0-9_%-]+$"')
+    assert.is_false(ok)
 end
 
 function testcase.rename()
@@ -100,11 +107,14 @@ function testcase.rename()
     assert.is_false(c:rename('foo', 'bar'))
 
     -- test that throws an error if oldkey is invalid
-    local err = assert.throws(c.rename, c, 'foo bar')
+    local ok, err = c:rename('foo bar')
     assert.match(err, 'key must be string of "^[a-zA-Z0-9_%-]+$"')
+    assert.is_false(ok)
+
     -- test that throws an error if newkey is invalid
-    err = assert.throws(c.rename, c, 'foo', 'hello world')
+    ok, err = c:rename('foo', 'hello world')
     assert.match(err, 'key must be string of "^[a-zA-Z0-9_%-]+$"')
+    assert.is_false(ok)
 end
 
 function testcase.keys()
@@ -147,12 +157,13 @@ function testcase.keys()
         end
         return false, 'abort by error'
     end)
+    assert.match(err, 'abort by error')
     assert.is_false(ok)
-    assert.equal(err, 'abort by error')
 
     -- test that throws an error if callback argument is invalid
-    err = assert.throws(c.keys, c, {})
+    ok, err = c:keys({})
     assert.match(err, 'callback must be callable')
+    assert.is_false(ok)
 end
 
 function testcase.evict()
@@ -203,15 +214,17 @@ function testcase.evict()
     local nevict, err = c:evict(function()
         return false, 'abort by error'
     end)
+    assert.match(err, 'abort by error')
     assert.equal(nevict, 0)
-    assert.equal(err, 'abort by error')
 
     -- test that throws an error if callback argument is invalid
-    err = assert.throws(c.evict, c, {})
+    nevict, err = c:evict({})
     assert.match(err, 'callback must be callable')
+    assert.equal(nevict, 0)
 
     -- test that throws an error if callback argument is invalid
-    err = assert.throws(c.evict, c, function()
+    nevict, err = c:evict(function()
     end, {})
     assert.match(err, 'n must be integer')
+    assert.equal(nevict, 0)
 end

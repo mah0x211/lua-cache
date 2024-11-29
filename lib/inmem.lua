@@ -120,10 +120,11 @@ end
 
 --- keys
 --- @param callback fun(string):(boolean,any)
+--- @param ... any
 --- @return boolean ok
 --- @return any err
 --- @return boolean? timeout
-function InMem:keys(callback)
+function InMem:keys(callback, ...)
     for k in pairs(self.data) do
         local ok, err = callback(k)
         if not ok then
@@ -139,10 +140,11 @@ end
 --- evict
 --- @param callback fun(string):(boolean,any)
 --- @param n integer
+--- @param ... any
 --- @return integer nevict
 --- @return any err
 --- @return boolean? timeout
-function InMem:evict(callback, n)
+function InMem:evict(callback, n, ...)
     local nevict = 0
     local t = time()
     local node = self.heap:peek()
