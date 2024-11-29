@@ -52,10 +52,10 @@ create an instance of cache.
 - `c:cache`: instance of `cache`.
 
 
-## ok, err = cache:set( key, val [, ttl] )
+## ok, err, timeout = cache:set( key, val [, ttl] )
 
 set a key-value pair.  
-this method calls the `store:set()` method after validating its arguments.
+this method calls the `store:set(key, val, ttl):(ok:boolean, err:any, timeout:boolean)` method after validating its arguments and encoding the value into JSON string.
 
 **Parameters**
 
@@ -67,12 +67,14 @@ this method calls the `store:set()` method after validating its arguments.
 
 - `ok:boolean`: `true` on success, or `false` on failure.
 - `err:any`: error message.
+- `timeout:boolean`: `true` if operation has timed out.
 
 
-## val, err = cache:get( key [, ttl] )
+## val, err, timeout = cache:get( key [, ttl] )
 
 get a value associated with a `key` and update an expiration seconds if `ttl` is specified.  
-this method calls the `store:get()` method after validating its arguments.
+this method calls the `store:get(key, ttl):(val:string, err:any, timeout:boolean)` method after validating its arguments.
+also, it decodes the value from JSON string.
 
 **Parameters**
 
@@ -83,12 +85,13 @@ this method calls the `store:get()` method after validating its arguments.
 
 - `val:any`: a value.
 - `err:any`: error message.
+- `timeout:boolean`: `true` if operation has timed out.
 
 
-## ok, err = cache:delete( key )
+## ok, err, timeout = cache:delete( key )
 
 delete a value associated with a `key`.  
-this method calls the `store:delete()` method after validating its arguments.
+this method calls the `store:delete(key):(ok:boolean, err:any, timeout:boolean)` method after validating its arguments.
 
 **Parameters**
 
@@ -98,12 +101,13 @@ this method calls the `store:delete()` method after validating its arguments.
 
 - `ok:boolean`: `true` on success, or `false` on failure.
 - `err:any`: error message.
+- `timeout:boolean`: `true` if operation has timed out.
 
 
-## ok, err = cache:rename( oldkey, newkey )
+## ok, err, timeout = cache:rename( oldkey, newkey )
 
 rename the `oldkey` name to `newkey`.  
-this method calls the `store:rename()` method after validating its arguments.
+this method calls the `store:rename(oldkey, newkey):(ok:boolean, err:any, timeout:boolean)` method after validating its arguments.
 
 **Parameters**
 
@@ -114,12 +118,13 @@ this method calls the `store:rename()` method after validating its arguments.
 
 - `ok:boolean`: `true` on success, or `false` on failure.
 - `err:any`: error message.
+- `timeout:boolean`: `true` if operation has timed out.
 
 
-## ok, err = cache:keys( callback, ... )
+## ok, err, timeout = cache:keys( callback, ... )
 
 execute a provided function once for each key. it is aborted if it returns `false` or an error.  
-this method calls the `store:keys()` method after validating its arguments.
+this method calls the `store:keys(callback, ...):(ok:boolean, err:any, timeout:boolean)` method after validating its arguments.
 
 **Parameters**
 
@@ -130,18 +135,20 @@ this method calls the `store:keys()` method after validating its arguments.
     - err:any: an error message.
     - key:string: cached key string.
     ```
+- `...:any`: additional arguments for the `store:keys()` method.
 
 **Returns**
 
 - `ok:boolean`: `true` on success, or `false` on failure.
 - `err:any`: error message.
+- `timeout:boolean`: `true` if operation has timed out.
 
 
 
-## n, err = cache:evict( callback [, n, ...] )
+## n, err, timeout = cache:evict( callback [, n, ...] )
 
 execute a provided function once before key is deleted. it is aborted if it returns `false` or an error.  
-this method calls the `store:evict()` method after validating its arguments.
+this method calls the `store:evict(callback, n, ...):(nevict:integer, err:any, timeout:boolean)` method after validating its arguments.
 
 **Parameters**
 
@@ -153,11 +160,13 @@ this method calls the `store:evict()` method after validating its arguments.
     - key:string: cached key string.
     ```
 - `n:integer`: maximum number of keys to be evicted.
+- `...:any`: additional arguments for the `store:evict()` method.
 
 **Returns**
 
 - `n:integer`: number of keys evicted.
 - `err:any`: error message.
+- `timeout:boolean`: `true` if operation has timed out.
 
 
 
