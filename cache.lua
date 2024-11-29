@@ -24,13 +24,16 @@ local find = string.find
 local format = string.format
 local type = type
 local getmetatable = debug.getmetatable
+local select = select
+local unpack = unpack or table.unpack
 local encode = require('yyjson').encode
 local decode = require('yyjson').decode
+local errorf = require('error').format
 -- constants
 local INF_POS = math.huge
 local INF_NEG = -INF_POS
 local KEY_PATTERN = '^[a-zA-Z0-9_%-]+$'
-local EKEY = format('key must be string of %q', KEY_PATTERN)
+local EKEY = format('key must be string of %q', '^[a-zA-Z0-9_%%-]+$')
 local EVAL = 'val must not be nil'
 
 --- is_callable
@@ -77,12 +80,12 @@ local function is_valid_key(key)
 end
 
 --- @class cache
---- @field store cache.store
+--- @field store cache.inmem
 --- @field ttl integer
 local Cache = {}
 
 --- init
---- @param store cache.store
+--- @param store cache.inmem
 --- @param ttl integer
 --- @return cache
 function Cache:init(store, ttl)
@@ -119,6 +122,24 @@ function Cache:init(store, ttl)
     return self
 end
 
+--- ret_erorr_result returns a result with an error.
+--- @param res any result
+--- @param err any
+--- @param timeout boolean?
+--- @param errfmt string error message format string
+--- @param ... any arguments for the error message format string
+local function ret_erorr_result(res, err, timeout, errfmt, ...)
+    if err then
+        local args = {
+            ...,
+        }
+        local narg = select('#', ...) + 1
+        args[narg] = err
+        err = errorf(errfmt, unpack(args, 1, narg))
+    end
+    return res, err, timeout == true
+end
+
 --- set
 --- @param key string
 --- @param val any
@@ -128,22 +149,29 @@ end
 --- @return boolean? timeout
 function Cache:set(key, val, ttl)
     if not is_valid_key(key) then
-        error(EKEY, 2)
+        return false, errorf(EKEY)
     elseif val == nil then
-        error(EVAL, 2)
+        return false, errorf(EVAL)
     elseif ttl == nil then
         ttl = self.ttl
     elseif not is_uint(ttl) then
-        error('ttl must be uint', 2)
+        return false, errorf('ttl must be uint', 2)
     end
 
+    -- encode val to JSON string
     local err
     val, err = encode(val)
     if not val then
-        return false, err
+        return false, errorf('failed to encode val', err)
     end
 
-    return self.store:set(key, val, ttl)
+    -- store val to cache store
+    local ok, timeout
+    ok, err, timeout = self.store:set(key, val, ttl)
+    if ok then
+        return true
+    end
+    return ret_erorr_result(false, err, timeout, 'failed to set val')
 end
 
 --- get
@@ -154,21 +182,23 @@ end
 --- @return boolean? timeout
 function Cache:get(key, ttl)
     if not is_valid_key(key) then
-        error(EKEY, 2)
+        return nil, errorf(EKEY)
     elseif ttl ~= nil and not is_uint(ttl) then
-        error('ttl must be uint', 2)
+        return nil, errorf('ttl must be uint')
     end
 
+    -- retrieve val from cache store
     local val, err, timeout = self.store:get(key, ttl)
-    if not val then
-        return nil, err, timeout
+    if val == nil then
+        return ret_erorr_result(nil, err, timeout, 'failed to get val')
     end
 
+    -- decode val from JSON string
     val, err = decode(val)
-    if not val then
-        return nil, err
+    if val then
+        return val
     end
-    return val
+    return ret_erorr_result(nil, err, timeout, 'failed to decode retrieved val')
 end
 
 --- delete
@@ -178,9 +208,14 @@ end
 --- @return boolean? timeout
 function Cache:delete(key)
     if not is_valid_key(key) then
-        error(EKEY, 2)
+        return false, errorf(EKEY)
     end
-    return self.store:delete(key)
+
+    local ok, err, timeout = self.store:delete(key)
+    if ok then
+        return true
+    end
+    return ret_erorr_result(false, err, timeout, 'failed to delete val')
 end
 
 --- rename
@@ -191,9 +226,14 @@ end
 ---@return boolean? timeout
 function Cache:rename(oldkey, newkey)
     if not is_valid_key(oldkey) or not is_valid_key(newkey) then
-        error(EKEY, 2)
+        return false, errorf(EKEY)
     end
-    return self.store:rename(oldkey, newkey)
+
+    local ok, err, timeout = self.store:rename(oldkey, newkey)
+    if ok then
+        return true
+    end
+    return ret_erorr_result(false, err, timeout, 'failed to rename key')
 end
 
 --- keys
@@ -203,9 +243,14 @@ end
 --- @return boolean? timeout
 function Cache:keys(callback, ...)
     if not is_callable(callback) then
-        error('callback must be callable', 2)
+        return false, errorf('callback must be callable')
     end
-    return self.store:keys(callback, ...)
+
+    local ok, err, timeout = self.store:keys(callback, ...)
+    if ok then
+        return true
+    end
+    return ret_erorr_result(false, err, timeout, 'failed to get keys')
 end
 
 --- evict
@@ -216,13 +261,20 @@ end
 --- @return boolean? timeout
 function Cache:evict(callback, n, ...)
     if not is_callable(callback) then
-        error('callback must be callable', 2)
+        return 0, errorf('callback must be callable')
     elseif n ~= nil and not is_int(n) then
-        error('n must be integer', 2)
+        return 0, errorf('n must be integer')
     elseif n == nil or n == 0 then
         n = -1
     end
-    return self.store:evict(callback, n, ...)
+
+    local nevict, err, timeout = self.store:evict(callback, n, ...)
+    if not is_int(nevict) then
+        return 0, errorf('store:evict() did not return a integer value')
+    elseif err then
+        err = errorf('failed to evict stored values', err)
+    end
+    return nevict, err, timeout == true
 end
 
 return {
